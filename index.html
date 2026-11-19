@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO Meta Tags (Google Search के लिए) -->
+    <title>Smart Photo & PDF Studio - MB to KB Converter, Passport Photo & PDF Maker</title>
+    <meta name="description" content="Free online MB to KB image compressor, KB to MB converter, SSC passport photo maker with name and date, signature cleaner, and Image to PDF converter.">
+    <meta name="keywords" content="mb to kb converter, image compressor 20kb 50kb, ssc photo resize, name and date on photo, passport size photo maker, image to pdf">
+    <meta name="robots" content="index, follow">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+</head>
+<body>
+
+    <!-- नेविगेशन बार -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="switchTool('compress-tab')">
+                <span class="logo-badge">Pro</span> Photo & PDF Studio
+            </div>
+            <ul class="nav-links">
+                <li><button class="nav-btn active" data-tab="compress-tab" onclick="switchTool('compress-tab')">Compress & Resize</button></li>
+                <li><button class="nav-btn" data-tab="namedate-tab" onclick="switchTool('namedate-tab')">Name & Date</button></li>
+                <li><button class="nav-btn" data-tab="crop-tab" onclick="switchTool('crop-tab')">Crop Photo</button></li>
+                <li><button class="nav-btn" data-tab="passport-tab" onclick="switchTool('passport-tab')">Passport Photo</button></li>
+                <li><button class="nav-btn" data-tab="sign-tab" onclick="switchTool('sign-tab')">Signature</button></li>
+                <li><button class="nav-btn" data-tab="pdf-tab" onclick="switchTool('pdf-tab')">Image to PDF</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- मुख्य टूल बॉक्स -->
+    <main class="main-wrapper">
+        <div class="tool-card">
+
+            <!-- 1. MB to KB / KB to MB & Resize -->
+            <section id="compress-tab" class="tab-content active">
+                <div class="tool-header">
+                    <h2>📉 Image Compressor (MB ↔ KB) & Resizer</h2>
+                    <p>फोटो का साइज कम या ज्यादा करें, फॉर्मेट बदलें और पिक्सल सेट करें</p>
+                </div>
+
+                <div class="upload-box" onclick="document.getElementById('comp-input').click()">
+                    <input type="file" id="comp-input" accept="image/*" hidden>
+                    <div class="upload-icon">📁</div>
+                    <p><strong>फोटो चुनने के लिए यहाँ क्लिक करें</strong> (JPG, PNG, WebP)</p>
+                    <span id="selected-file-name" class="file-badge">कोई फाइल नहीं चुनी गई</span>
+                </div>
+
+                <div id="comp-controls" class="controls-panel hidden">
+                    <div class="file-info-bar">
+                        <span>असली साइज: <strong id="orig-size">0 KB</strong></span>
+                        <span>डाइमेंशन: <strong id="orig-dim">0x0 px</strong></span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Desired Output Format (फॉर्मेट चुनें):</label>
+                        <div class="format-btns">
+                            <button type="button" class="fmt-btn active" onclick="selectFormat('image/jpeg', this)">JPG</button>
+                            <button type="button" class="fmt-btn" onclick="selectFormat('image/png', this)">PNG</button>
+                            <button type="button" class="fmt-btn" onclick="selectFormat('image/webp', this)">WebP</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Image Quality (क्वालिटी स्लाइडर): <strong id="qual-val">85%</strong></label>
+                        <input type="range" id="quality-slider" min="10" max="100" value="85" oninput="updateQualityLabel(this.value)">
+                        <div class="slider-labels">
+                            <span>Lower (Smaller File)</span>
+                            <span>Higher (Better Quality)</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Select Target File Size (रेडीमेड साइज चुनें):</label>
+                        <div class="preset-chips">
+                            <button type="button" onclick="setPresetKB(20)">20 KB</button>
+                            <button type="button" onclick="setPresetKB(50)">50 KB</button>
+                            <button type="button" onclick="setPresetKB(100)">100 KB</button>
+                            <button type="button" onclick="setPresetKB(150)">150 KB</button>
+                            <button type="button" onclick="setPresetKB(200)">200 KB</button>
+                            <button type="button" onclick="setPresetKB(300)">300 KB</button>
+                            <button type="button" onclick="setPresetKB(500)">500 KB</button>
+                            <button type="button" onclick="setPresetKB(1024)">1 MB</button>
+                        </div>
+                    </div>
+
+                    <div class="grid-inputs">
+                        <div>
+                            <label>Custom Target Size (KB में):</label>
+                            <input type="number" id="target-kb" placeholder="जैसे: 50 या 1500">
+                        </div>
+                        <div>
+                            <label>चौड़ाई (Width px):</label>
+                            <input type="number" id="resize-w" placeholder="Auto">
+                        </div>
+                        <div>
+                            <label>ऊंचाई (Height px):</label>
+                            <input type="number" id="resize-h" placeholder="Auto">
+                        </div>
+                    </div>
+
+                    <button class="primary-btn" onclick="processCompressResize()">⚡ Process Image (फोटो तैयार करें)</button>
+
+                    <div id="comp-result" class="result-box hidden">
+                        <div class="success-banner">✅ प्रोसेस पूरा हुआ! नया साइज: <strong id="new-size">0 KB</strong></div>
+                        <img id="comp-preview" alt="Preview">
+                        <br>
+                        <a id="comp-download" class="download-btn" download="processed-image.jpg">⬇️ डाउनलोड करें (Download)</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- नया टूल: Name & Date on Photo (SSC/RRB के लिए) -->
+            <section id="namedate-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>🏷️ Add Name & Date on Photo (SSC / Form Photo)</h2>
+                    <p>सरकारी फॉर्म के लिए फोटो के नीचे सफेद पट्टी पर नाम और तारीख लिखें</p>
+                </div>
+                <input type="file" id="nd-input" accept="image/*" class="styled-file-input">
+                <div class="grid-inputs">
+                    <div>
+                        <label>आपका पूरा नाम (Name):</label>
+                        <input type="text" id="nd-name" placeholder="जैसे: ABHISHEK KUMAR">
+                    </div>
+                    <div>
+                        <label>फोटो की तारीख (Date of Photo):</label>
+                        <input type="text" id="nd-date" placeholder="जैसे: DOP: 19-11-2026">
+                    </div>
+                </div>
+                <button class="primary-btn" onclick="generateNameDatePhoto()">✨ फोटो पर नाम और तारीख जोड़ें</button>
+                <div id="nd-result" class="result-box hidden">
+                    <canvas id="nd-canvas"></canvas>
+                    <br>
+                    <a id="nd-download" class="download-btn" download="photo-with-name-date.jpg">⬇️ फोटो डाउनलोड करें</a>
+                </div>
+            </section>
+
+            <!-- 2. Crop Tool -->
+            <section id="crop-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>✂️ Smart Image Cropper</h2>
+                    <p>सरकारी फॉर्म, पासपोर्ट या सिग्नेचर के अनुपात में फोटो काटें</p>
+                </div>
+                <input type="file" id="crop-input" accept="image/*" class="styled-file-input">
+                <div id="crop-area" class="hidden">
+                    <div class="crop-container">
+                        <img id="crop-image" alt="To Crop">
+                    </div>
+                    <div class="preset-chips">
+                        <button onclick="setAspectRatio(NaN)">Free Crop</button>
+                        <button onclick="setAspectRatio(1)">1:1 (Square)</button>
+                        <button onclick="setAspectRatio(3.5/4.5)">Passport (3.5x4.5)</button>
+                        <button onclick="setAspectRatio(3/1)">Signature (3:1)</button>
+                        <button onclick="setAspectRatio(16/9)">16:9 Banner</button>
+                    </div>
+                    <button class="primary-btn" onclick="cropAndDownload()">✂️ क्रॉप करें और डाउनलोड करें</button>
+                </div>
+            </section>
+
+            <!-- 3. Passport Size Photo Maker -->
+            <section id="passport-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>🪪 Passport Size Photo Sheet Maker (A4)</h2>
+                    <p>एक फोटो से तुरंत प्रिंट करने लायक A4 पासपोर्ट शीट बनाएं</p>
+                </div>
+                <input type="file" id="pass-input" accept="image/*" class="styled-file-input">
+                <div id="pass-controls" class="hidden">
+                    <div class="grid-inputs">
+                        <div>
+                            <label>फोटो की संख्या (A4 शीट पर):</label>
+                            <select id="pass-count">
+                                <option value="6">6 फोटो (1 लाइन)</option>
+                                <option value="12" selected>12 फोटो (2 लाइन)</option>
+                                <option value="18">18 फोटो (3 लाइन)</option>
+                                <option value="24">24 फोटो (4 लाइन)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>फोटो बॉर्डर कलर:</label>
+                            <input type="color" id="pass-border" value="#000000" style="height: 38px; width: 100%;">
+                        </div>
+                    </div>
+                    <button class="primary-btn" onclick="generatePassportSheet()">🖨️ A4 शीट तैयार करें</button>
+                    <div id="pass-result" class="result-box hidden">
+                        <canvas id="pass-canvas"></canvas>
+                        <br>
+                        <a id="pass-download" class="download-btn" download="passport-A4-sheet.jpg">⬇️ A4 शीट डाउनलोड करें</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Signature Maker & Enhancer -->
+            <section id="sign-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>✍️ Digital Signature Maker & Cleaner</h2>
+                    <p>स्क्रीन पर साइन बनाएं या कागज पर किए गए साइन का बैकग्राउंड सफेद करें</p>
+                </div>
+                <div class="sign-box">
+                    <h3>विकल्प A: माउस या उंगली से साइन बनाएं</h3>
+                    <canvas id="sign-pad" width="450" height="160"></canvas>
+                    <div class="preset-chips" style="margin-top: 10px;">
+                        <button onclick="clearSignPad()">🗑️ साफ करें (Clear)</button>
+                        <button class="primary-btn" style="margin:0;" onclick="downloadDrawnSign()">⬇️ साइन डाउनलोड करें</button>
+                    </div>
+                </div>
+                <hr>
+                <div class="sign-box">
+                    <h3>विकल्प B: कागज के साइन की फोटो साफ करें (White Background)</h3>
+                    <input type="file" id="sign-upload" accept="image/*" class="styled-file-input">
+                    <div id="sign-clean-box" class="hidden result-box">
+                        <canvas id="sign-clean-canvas"></canvas>
+                        <br>
+                        <a id="sign-clean-dl" class="download-btn" download="clean-signature.jpg">⬇️ साफ सिग्नेचर डाउनलोड करें</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Image to PDF -->
+            <section id="pdf-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>📄 Image to PDF Converter</h2>
+                    <p>कई डॉक्यूमेंट्स या मार्कशीट की फोटो को एक ही PDF फाइल में जोड़ें</p>
+                </div>
+                <input type="file" id="pdf-input" accept="image/*" multiple class="styled-file-input">
+                <p id="pdf-count-text" style="font-weight:bold; color:#2563eb; margin-bottom:10px;"></p>
+                <button class="primary-btn" onclick="createPDF()">📄 PDF बनाएं और डाउनलोड करें</button>
+            </section>
+
+        </div>
+
+        <!-- Quick Tools & Form Presets Grid -->
+        <section class="info-section">
+            <h2 class="section-title">Most Used Tools & Quick Form Presets</h2>
+            <p class="section-subtitle">सरकारी नौकरी और ऑनलाइन फॉर्म भरने के लिए सीधे यहाँ से टूल चुनें</p>
+
+            <div class="tools-grid">
+                <div class="quick-btn" onclick="quickAction('compress-tab', 20)">
+                    <span class="q-icon">📉</span>
+                    <div>
+                        <strong>Compress Image to 20KB</strong>
+                        <small>सिग्नेचर और थंब इम्प्रेशन के लिए</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="quickAction('compress-tab', 50)">
+                    <span class="q-icon">🖼️</span>
+                    <div>
+                        <strong>SSC / RRB Photo (50KB)</strong>
+                        <small>पासपोर्ट फोटो साइज सेट करें</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="switchTool('namedate-tab')">
+                    <span class="q-icon">🏷️</span>
+                    <div>
+                        <strong>Name & Date on Photo</strong>
+                        <small>फोटो पर नाम और तारीख लिखें</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="quickAction('compress-tab', 1500)">
+                    <span class="q-icon">📈</span>
+                    <div>
+                        <strong>Increase Size (KB to MB)</strong>
+                        <small>छोटी फाइल का साइज MB में बढ़ाएं</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="switchTool('passport-tab')">
+                    <span class="q-icon">🪪</span>
+                    <div>
+                        <strong>Passport Photo Maker</strong>
+                        <small>A4 शीट पर 6 से 24 फोटो बनाएं</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="switchTool('sign-tab')">
+                    <span class="q-icon">✍️</span>
+                    <div>
+                        <strong>Generate & Clean Signature</strong>
+                        <small>डिजिटल साइन या सफेद बैकग्राउंड</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="switchTool('crop-tab')">
+                    <span class="q-icon">✂️</span>
+                    <div>
+                        <strong>Resize 3.5cm x 4.5cm</strong>
+                        <small>सही अनुपात में फोटो क्रॉप करें</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="switchTool('pdf-tab')">
+                    <span class="q-icon">📄</span>
+                    <div>
+                        <strong>Images to PDF Maker</strong>
+                        <small>मल्टीपल फोटो से एक PDF बनाएं</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How to Use Section -->
+        <section class="info-section">
+            <h2 class="section-title">How to Use (इस्तेमाल कैसे करें?)</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-num">1</div>
+                    <h3>Upload Photo</h3>
+                    <p>ऊपर दिए गए बॉक्स में अपनी फोटो या डॉक्यूमेंट चुनें। आपकी फाइल आपके ब्राउज़र में ही रहती है।</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">2</div>
+                    <h3>Select Size or Tool</h3>
+                    <p>अपनी जरूरत के अनुसार KB साइज (जैसे 20KB, 50KB), नाम-तारीख, क्रॉप या PDF विकल्प चुनें।</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">3</div>
+                    <h3>Process & Download</h3>
+                    <p>'Process' बटन पर क्लिक करें और बिना किसी वॉटरमार्क के तुरंत अपनी फाइल डाउनलोड करें।</p>
+                </div>
+            </div>
+            <div class="privacy-strip">
+                🔒 <strong>100% Safe & Private:</strong> No login, no installation, and no server upload — सभी प्रोसेसिंग सीधे आपके फोन या लैपटॉप के ब्राउज़र में होती है।
+            </div>
+        </section>
+
+        <!-- FAQ Section (AdSense अप्रूवल और SEO के लिए जरूरी कंटेंट) -->
+        <section class="info-section">
+            <h2 class="section-title">Frequently Asked Questions (FAQ)</h2>
+            <div style="margin-top: 15px; display: grid; gap: 14px;">
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <strong>Q1. SSC और रेलवे फॉर्म के लिए फोटो और सिग्नेचर का साइज कितना होना चाहिए?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">आमतौर पर SSC और RRB के ऑनलाइन फॉर्म में पासपोर्ट साइज फोटो <strong>20 KB से 50 KB</strong> के बीच और सिग्नेचर <strong>10 KB से 20 KB</strong> के बीच (JPG/JPEG फॉर्मेट में) मांगा जाता है।</p>
+                </div>
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <strong>Q2. क्या मेरी फोटो या डॉक्यूमेंट किसी सर्वर पर सेव होते हैं?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">नहीं, बिल्कुल नहीं। यह वेबसाइट 100% ब्राउज़र-आधारित (Client-Side) तकनीक पर काम करती है। आपकी कोई भी फाइल इंटरनेट पर अपलोड नहीं होती।</p>
+                </div>
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <strong>Q3. क्या हम कम KB वाली फोटो का साइज बढ़ाकर MB में कर सकते हैं?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">हाँ, आप हमारे 'Compress & Resize' टूल में टारगेट साइज 1000 KB या 1500 KB डालकर या PNG फॉर्मेट चुनकर फाइल का साइज बढ़ा सकते हैं।</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- फुटर (AdSense के पेजेस के साथ) -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>📸 Smart Photo & PDF Studio</h3>
+                <p>छात्रों और ऑनलाइन फॉर्म भरने वालों के लिए बनाया गया तेज़, मुफ्त और सुरक्षित ऑल-इन-वन इमेज और PDF टूल।</p>
+            </div>
+            <div class="footer-col">
+                <h4>Popular Tools</h4>
+                <ul>
+                    <li onclick="switchTool('compress-tab')">MB to KB Image Compressor</li>
+                    <li onclick="switchTool('namedate-tab')">Add Name & Date on Photo</li>
+                    <li onclick="switchTool('passport-tab')">Passport Size Photo Maker</li>
+                    <li onclick="switchTool('pdf-tab')">Image to PDF Converter</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Important Links</h4>
+                <ul>
+                    <li><a href="about.html" style="color:#e0e7ff; text-decoration:none;">About Us & Contact</a></li>
+                    <li><a href="privacy.html" style="color:#e0e7ff; text-decoration:none;">Privacy Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Smart Photo & PDF Studio • All Rights Reserved • 100% Client-Side Privacy</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
