@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-N4QMC66K"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SEO Meta Tags (Google Search के लिए) -->
-    <title>Smart Photo & PDF Studio - MB to KB Converter, Passport Photo & PDF Maker</title>
-    <meta name="description" content="Free online MB to KB image compressor, KB to MB converter, SSC passport photo maker with name and date, signature cleaner, and Image to PDF converter.">
-    <meta name="keywords" content="mb to kb converter, image compressor 20kb 50kb, ssc photo resize, name and date on photo, passport size photo maker, image to pdf">
+    <title>Smart Photo & PDF Studio - AI BG Remover, Photo+Sign, MB to KB & PDF</title>
+    <meta name="description" content="Free online AI background remover with color change, merge photo and signature, add date on photo, MB to KB image compressor, and Image to PDF.">
+    <meta name="keywords" content="background remover, change photo background color, merge photo and signature, add date on photo, mb to kb converter, ssc photo maker">
     <meta name="robots" content="index, follow">
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <!-- AI Background Removal Library (MediaPipe) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -27,10 +22,12 @@
                 <span class="logo-badge">Pro</span> Photo & PDF Studio
             </div>
             <ul class="nav-links">
-                <li><button class="nav-btn active" data-tab="compress-tab" onclick="switchTool('compress-tab')">Compress & Resize</button></li>
-                <li><button class="nav-btn" data-tab="namedate-tab" onclick="switchTool('namedate-tab')">Name & Date</button></li>
-                <li><button class="nav-btn" data-tab="crop-tab" onclick="switchTool('crop-tab')">Crop Photo</button></li>
-                <li><button class="nav-btn" data-tab="passport-tab" onclick="switchTool('passport-tab')">Passport Photo</button></li>
+                <li><button class="nav-btn active" data-tab="compress-tab" onclick="switchTool('compress-tab')">MB ↔ KB</button></li>
+                <li><button class="nav-btn" data-tab="bg-tab" onclick="switchTool('bg-tab')">🪄 BG Remover</button></li>
+                <li><button class="nav-btn" data-tab="photosign-tab" onclick="switchTool('photosign-tab')">🖼️+✍️ Photo & Sign</button></li>
+                <li><button class="nav-btn" data-tab="namedate-tab" onclick="switchTool('namedate-tab')">📅 Date / Name</button></li>
+                <li><button class="nav-btn" data-tab="crop-tab" onclick="switchTool('crop-tab')">Crop</button></li>
+                <li><button class="nav-btn" data-tab="passport-tab" onclick="switchTool('passport-tab')">Passport</button></li>
                 <li><button class="nav-btn" data-tab="sign-tab" onclick="switchTool('sign-tab')">Signature</button></li>
                 <li><button class="nav-btn" data-tab="pdf-tab" onclick="switchTool('pdf-tab')">Image to PDF</button></li>
             </ul>
@@ -119,28 +116,94 @@
                 </div>
             </section>
 
-            <!-- नया टूल: Name & Date on Photo (SSC/RRB के लिए) -->
+            <!-- नया टूल 1: AI Background Remover & Color Changer -->
+            <section id="bg-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>🪄 AI Background Remover & Color Changer</h2>
+                    <p>फोटो का बैकग्राउंड हटाएं और नया बैकग्राउंड कलर (सफेद, नीला, लाल आदि) जोड़ें</p>
+                </div>
+
+                <input type="file" id="bg-input" accept="image/*" class="styled-file-input">
+
+                <div class="control-group">
+                    <label>नया बैकग्राउंड कलर चुनें:</label>
+                    <div class="preset-chips" style="align-items: center;">
+                        <button type="button" onclick="setBgColor('#FFFFFF')">⬜ White (सफेद)</button>
+                        <button type="button" onclick="setBgColor('#E0F2FE')">🟦 Light Blue (हल्का नीला)</button>
+                        <button type="button" onclick="setBgColor('#2563EB')">🔷 Royal Blue</button>
+                        <button type="button" onclick="setBgColor('#DC2626')">🟥 Red (लाल)</button>
+                        <button type="button" onclick="setBgColor('transparent')">🏁 Transparent (PNG)</button>
+                        <input type="color" id="bg-custom-color" value="#ffffff" title="कोई भी रंग चुनें" style="height:36px; width:50px; border:none; cursor:pointer;">
+                    </div>
+                </div>
+
+                <button class="primary-btn" onclick="processBackgroundRemoval()">🪄 बैकग्राउंड बदलें (Remove & Apply Color)</button>
+                <p id="bg-status" style="margin-top:10px; font-weight:bold; color:#2563eb;"></p>
+
+                <div id="bg-result" class="result-box hidden">
+                    <canvas id="bg-canvas"></canvas>
+                    <br>
+                    <a id="bg-download" class="download-btn" download="new-background-photo.png">⬇️ फोटो डाउनलोड करें</a>
+                </div>
+            </section>
+
+            <!-- नया टूल 2: Merge Photo & Signature -->
+            <section id="photosign-tab" class="tab-content">
+                <div class="tool-header">
+                    <h2>🖼️+✍️ Merge Photo & Signature (फोटो के साथ सिग्नेचर जोड़ें)</h2>
+                    <p>सरकारी फॉर्म के लिए एक ही इमेज में ऊपर फोटो और नीचे सिग्नेचर जोड़ें</p>
+                </div>
+
+                <div class="grid-inputs">
+                    <div>
+                        <label>1. पासपोर्ट फोटो चुनें:</label>
+                        <input type="file" id="ps-photo-input" accept="image/*" class="styled-file-input">
+                    </div>
+                    <div>
+                        <label>2. सिग्नेचर फोटो चुनें:</label>
+                        <input type="file" id="ps-sign-input" accept="image/*" class="styled-file-input">
+                    </div>
+                </div>
+
+                <button class="primary-btn" onclick="mergePhotoAndSign()">🔗 फोटो और सिग्नेचर जोड़ें</button>
+
+                <div id="ps-result" class="result-box hidden">
+                    <canvas id="ps-canvas"></canvas>
+                    <br>
+                    <a id="ps-download" class="download-btn" download="photo-with-signature.jpg">⬇️ संयुक्त फोटो डाउनलोड करें</a>
+                </div>
+            </section>
+
+            <!-- नया टूल 3: Add Date & Name on Photo -->
             <section id="namedate-tab" class="tab-content">
                 <div class="tool-header">
-                    <h2>🏷️ Add Name & Date on Photo (SSC / Form Photo)</h2>
-                    <p>सरकारी फॉर्म के लिए फोटो के नीचे सफेद पट्टी पर नाम और तारीख लिखें</p>
+                    <h2>📅 Add Date & Name on Photo (फोटो पर तारीख या नाम लिखें)</h2>
+                    <p>फोटो के नीचे सफेद पट्टी पर केवल तारीख (DOP) या नाम और तारीख दोनों लिखें</p>
                 </div>
                 <input type="file" id="nd-input" accept="image/*" class="styled-file-input">
                 <div class="grid-inputs">
                     <div>
-                        <label>आपका पूरा नाम (Name):</label>
-                        <input type="text" id="nd-name" placeholder="जैसे: ABHISHEK KUMAR">
+                        <label>फोटो की तारीख (Date of Photo - जरूरी):</label>
+                        <input type="date" id="nd-date-picker" style="padding:8px; border:1px solid #cbd5e1; border-radius:6px; width:100%;">
                     </div>
                     <div>
-                        <label>फोटो की तारीख (Date of Photo):</label>
-                        <input type="text" id="nd-date" placeholder="जैसे: DOP: 19-11-2026">
+                        <label>तारीख से पहले क्या लिखें?</label>
+                        <select id="nd-date-prefix">
+                            <option value="DOP: ">DOP: (Date of Photo)</option>
+                            <option value="DATE: ">DATE:</option>
+                            <option value="">सिर्फ तारीख (कोई शब्द नहीं)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>नाम (वैकल्पिक - खाली छोड़ सकते हैं):</label>
+                        <input type="text" id="nd-name" placeholder="केवल तारीख चाहिए तो खाली छोड़ें">
                     </div>
                 </div>
-                <button class="primary-btn" onclick="generateNameDatePhoto()">✨ फोटो पर नाम और तारीख जोड़ें</button>
+                <button class="primary-btn" onclick="generateNameDatePhoto()">✨ फोटो पर तारीख / नाम जोड़ें</button>
                 <div id="nd-result" class="result-box hidden">
                     <canvas id="nd-canvas"></canvas>
                     <br>
-                    <a id="nd-download" class="download-btn" download="photo-with-name-date.jpg">⬇️ फोटो डाउनलोड करें</a>
+                    <a id="nd-download" class="download-btn" download="photo-with-date.jpg">⬇️ फोटो डाउनलोड करें</a>
                 </div>
             </section>
 
@@ -243,52 +306,52 @@
             <p class="section-subtitle">सरकारी नौकरी और ऑनलाइन फॉर्म भरने के लिए सीधे यहाँ से टूल चुनें</p>
 
             <div class="tools-grid">
-                <div class="quick-btn" onclick="quickAction('compress-tab', 20)">
-                    <span class="q-icon">📉</span>
+                <div class="quick-btn" onclick="switchTool('bg-tab')">
+                    <span class="q-icon">🪄</span>
                     <div>
-                        <strong>Compress Image to 20KB</strong>
-                        <small>सिग्नेचर और थंब इम्प्रेशन के लिए</small>
+                        <strong>AI Background Remover</strong>
+                        <small>बैकग्राउंड हटाकर सफेद/नीला रंग भरें</small>
                     </div>
                 </div>
-                <div class="quick-btn" onclick="quickAction('compress-tab', 50)">
+                <div class="quick-btn" onclick="switchTool('photosign-tab')">
                     <span class="q-icon">🖼️</span>
                     <div>
-                        <strong>SSC / RRB Photo (50KB)</strong>
-                        <small>पासपोर्ट फोटो साइज सेट करें</small>
+                        <strong>Merge Photo + Signature</strong>
+                        <small>एक ही फोटो में साइन और फोटो जोड़ें</small>
                     </div>
                 </div>
                 <div class="quick-btn" onclick="switchTool('namedate-tab')">
-                    <span class="q-icon">🏷️</span>
+                    <span class="q-icon">📅</span>
                     <div>
-                        <strong>Name & Date on Photo</strong>
-                        <small>फोटो पर नाम और तारीख लिखें</small>
+                        <strong>Add Date / Name on Photo</strong>
+                        <small>फोटो पर DOP तारीख और नाम लिखें</small>
                     </div>
                 </div>
-                <div class="quick-btn" onclick="quickAction('compress-tab', 1500)">
-                    <span class="q-icon">📈</span>
+                <div class="quick-btn" onclick="quickAction('compress-tab', 50)">
+                    <span class="q-icon">📉</span>
                     <div>
-                        <strong>Increase Size (KB to MB)</strong>
-                        <small>छोटी फाइल का साइज MB में बढ़ाएं</small>
+                        <strong>SSC / RRB Photo (50KB)</strong>
+                        <small>पासपोर्ट फोटो का साइज कम करें</small>
+                    </div>
+                </div>
+                <div class="quick-btn" onclick="quickAction('compress-tab', 20)">
+                    <span class="q-icon">✍️</span>
+                    <div>
+                        <strong>Signature Resize (20KB)</strong>
+                        <small>सिग्नेचर को 10-20KB में बदलें</small>
                     </div>
                 </div>
                 <div class="quick-btn" onclick="switchTool('passport-tab')">
                     <span class="q-icon">🪪</span>
                     <div>
-                        <strong>Passport Photo Maker</strong>
+                        <strong>Passport Photo Sheet</strong>
                         <small>A4 शीट पर 6 से 24 फोटो बनाएं</small>
-                    </div>
-                </div>
-                <div class="quick-btn" onclick="switchTool('sign-tab')">
-                    <span class="q-icon">✍️</span>
-                    <div>
-                        <strong>Generate & Clean Signature</strong>
-                        <small>डिजिटल साइन या सफेद बैकग्राउंड</small>
                     </div>
                 </div>
                 <div class="quick-btn" onclick="switchTool('crop-tab')">
                     <span class="q-icon">✂️</span>
                     <div>
-                        <strong>Resize 3.5cm x 4.5cm</strong>
+                        <strong>Crop Photo (3.5x4.5cm)</strong>
                         <small>सही अनुपात में फोटो क्रॉप करें</small>
                     </div>
                 </div>
@@ -313,13 +376,13 @@
                 </div>
                 <div class="step-card">
                     <div class="step-num">2</div>
-                    <h3>Select Size or Tool</h3>
-                    <p>अपनी जरूरत के अनुसार KB साइज (जैसे 20KB, 50KB), नाम-तारीख, क्रॉप या PDF विकल्प चुनें।</p>
+                    <h3>Select Tool & Edit</h3>
+                    <p>बैकग्राउंड कलर बदलें, फोटो के साथ सिग्नेचर जोड़ें, तारीख लिखें या KB साइज सेट करें।</p>
                 </div>
                 <div class="step-card">
                     <div class="step-num">3</div>
                     <h3>Process & Download</h3>
-                    <p>'Process' बटन पर क्लिक करें और बिना किसी वॉटरमार्क के तुरंत अपनी फाइल डाउनलोड करें।</p>
+                    <p>बटन पर क्लिक करें और बिना किसी वॉटरमार्क के तुरंत अपनी फाइल डाउनलोड करें।</p>
                 </div>
             </div>
             <div class="privacy-strip">
@@ -327,28 +390,28 @@
             </div>
         </section>
 
-        <!-- FAQ Section (AdSense अप्रूवल और SEO के लिए जरूरी कंटेंट) -->
+        <!-- FAQ Section -->
         <section class="info-section">
             <h2 class="section-title">Frequently Asked Questions (FAQ)</h2>
             <div style="margin-top: 15px; display: grid; gap: 14px;">
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <strong>Q1. SSC और रेलवे फॉर्म के लिए फोटो और सिग्नेचर का साइज कितना होना चाहिए?</strong>
-                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">आमतौर पर SSC और RRB के ऑनलाइन फॉर्म में पासपोर्ट साइज फोटो <strong>20 KB से 50 KB</strong> के बीच और सिग्नेचर <strong>10 KB से 20 KB</strong> के बीच (JPG/JPEG फॉर्मेट में) मांगा जाता है।</p>
+                    <strong>Q1. फोटो का बैकग्राउंड सफेद या हल्का नीला कैसे करें?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">ऊपर 'BG Remover' टैब पर जाएं, अपनी फोटो चुनें, White या Light Blue कलर बटन दबाएं और 'बैकग्राउंड बदलें' पर क्लिक करें।</p>
                 </div>
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <strong>Q2. क्या मेरी फोटो या डॉक्यूमेंट किसी सर्वर पर सेव होते हैं?</strong>
-                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">नहीं, बिल्कुल नहीं। यह वेबसाइट 100% ब्राउज़र-आधारित (Client-Side) तकनीक पर काम करती है। आपकी कोई भी फाइल इंटरनेट पर अपलोड नहीं होती।</p>
+                    <strong>Q2. फोटो के नीचे केवल तारीख (Date of Photo) कैसे लिखें?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">'Date / Name' टैब खोलें, अपनी फोटो अपलोड करें, कैलेंडर से तारीख चुनें (नाम वाला बॉक्स खाली छोड़ दें) और डाउनलोड कर लें।</p>
                 </div>
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <strong>Q3. क्या हम कम KB वाली फोटो का साइज बढ़ाकर MB में कर सकते हैं?</strong>
-                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">हाँ, आप हमारे 'Compress & Resize' टूल में टारगेट साइज 1000 KB या 1500 KB डालकर या PNG फॉर्मेट चुनकर फाइल का साइज बढ़ा सकते हैं।</p>
+                    <strong>Q3. फोटो और सिग्नेचर को एक साथ कैसे जोड़ें?</strong>
+                    <p style="font-size:0.92rem; color:#475569; margin-top:4px;">'Photo & Sign' टैब में जाकर पहले अपनी फोटो और फिर सिग्नेचर अपलोड करें—टूल दोनों को एक ही फ्रेम में जोड़ देगा।</p>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- फुटर (AdSense के पेजेस के साथ) -->
+    <!-- फुटर -->
     <footer class="site-footer">
         <div class="footer-container">
             <div class="footer-col">
@@ -358,10 +421,10 @@
             <div class="footer-col">
                 <h4>Popular Tools</h4>
                 <ul>
+                    <li onclick="switchTool('bg-tab')">AI Background Remover</li>
+                    <li onclick="switchTool('photosign-tab')">Merge Photo & Signature</li>
+                    <li onclick="switchTool('namedate-tab')">Add Date on Photo</li>
                     <li onclick="switchTool('compress-tab')">MB to KB Image Compressor</li>
-                    <li onclick="switchTool('namedate-tab')">Add Name & Date on Photo</li>
-                    <li onclick="switchTool('passport-tab')">Passport Size Photo Maker</li>
-                    <li onclick="switchTool('pdf-tab')">Image to PDF Converter</li>
                 </ul>
             </div>
             <div class="footer-col">

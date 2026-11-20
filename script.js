@@ -67,7 +67,6 @@ function processCompressResize() {
     let width = parseInt(document.getElementById('resize-w').value) || originalImage.width;
     let height = parseInt(document.getElementById('resize-h').value) || originalImage.height;
 
-    // अगर KB से MB बढ़ाना हो और टारगेट साइज बड़ा दिया हो
     if (targetKB && targetKB > 600 && !document.getElementById('resize-w').value) {
         width = Math.max(width, 2200);
         height = Math.round((originalImage.height / originalImage.width) * width);
@@ -295,18 +294,138 @@ function loadImage(src) {
         img.src = src;
     });
 }
+
 // ==========================================
-// 6. NAME & DATE ON PHOTO (SSC/RRB Helper)
+// 6. AI BACKGROUND REMOVER & COLOR CHANGER
 // ==========================================
-function generateNameDatePhoto() {
-    const fileInput = document.getElementById('nd-input');
-    const nameText = document.getElementById('nd-name').value.trim().toUpperCase();
-    const dateText = document.getElementById('nd-date').value.trim().toUpperCase();
+let selectedBgColor = '#FFFFFF';
+
+function setBgColor(color) {
+    selectedBgColor = color;
+    if (color !== 'transparent') {
+        document.getElementById('bg-custom-color').value = color;
+    }
+}
+
+document.getElementById('bg-custom-color').addEventListener('input', function(e) {
+    selectedBgColor = e.target.value;
+});
+
+async function processBackgroundRemoval() {
+    const fileInput = document.getElementById('bg-input');
+    const statusText = document.getElementById('bg-status');
 
     if (!fileInput.files[0]) {
         alert("कृपया पहले अपनी फोटो चुनें!");
         return;
     }
+
+    statusText.innerText = "⏳ AI मॉडल लोड हो रहा है और बैकग्राउंड हटाया जा रहा है... कृपया 3-5 सेकंड रुकें।";
+
+    const img = await loadImage(await readFileAsDataURL(fileInput.files[0]));
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const selfieSegmentation = new SelfieSegmentation({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+    });
+
+    selfieSegmentation.setOptions({ modelSelection: 1 });
+
+    selfieSegmentation.onResults((results) => {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+        if (selectedBgColor !== 'transparent') {
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = selectedBgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.restore();
+
+        const dl = document.getElementById('bg-download');
+        dl.href = canvas.toDataURL('image/png');
+        document.getElementById('bg-result').classList.remove('hidden');
+        statusText.innerText = "✅ बैकग्राउंड सफलतापूर्वक बदल दिया गया है!";
+    });
+
+    await selfieSegmentation.send({ image: img });
+}
+
+// ==========================================
+// 7. MERGE PHOTO & SIGNATURE
+// ==========================================
+async function mergePhotoAndSign() {
+    const photoFile = document.getElementById('ps-photo-input').files[0];
+    const signFile = document.getElementById('ps-sign-input').files[0];
+
+    if (!photoFile || !signFile) {
+        alert("कृपया फोटो और सिग्नेचर दोनों अपलोड करें!");
+        return;
+    }
+
+    const photoImg = await loadImage(await readFileAsDataURL(photoFile));
+    const signImg = await loadImage(await readFileAsDataURL(signFile));
+
+    const canvas = document.getElementById('ps-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const w = 400;
+    const photoH = 450;
+    const signH = 130;
+
+    canvas.width = w;
+    canvas.height = photoH + signH;
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(photoImg, 0, 0, w, photoH);
+
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, photoH);
+    ctx.lineTo(w, photoH);
+    ctx.stroke();
+
+    ctx.drawImage(signImg, 10, photoH + 10, w - 20, signH - 20);
+    ctx.strokeRect(1, 1, w - 2, canvas.height - 2);
+
+    const dl = document.getElementById('ps-download');
+    dl.href = canvas.toDataURL('image/jpeg', 0.95);
+    document.getElementById('ps-result').classList.remove('hidden');
+}
+
+// ==========================================
+// 8. ADD DATE & NAME ON PHOTO
+// ==========================================
+document.getElementById('nd-date-picker').valueAsDate = new Date();
+
+function generateNameDatePhoto() {
+    const fileInput = document.getElementById('nd-input');
+    const rawDate = document.getElementById('nd-date-picker').value;
+    const prefix = document.getElementById('nd-date-prefix').value;
+    const nameText = document.getElementById('nd-name').value.trim().toUpperCase();
+
+    if (!fileInput.files[0]) {
+        alert("कृपया पहले अपनी फोटो चुनें!");
+        return;
+    }
+
+    let formattedDate = "";
+    if (rawDate) {
+        const parts = rawDate.split('-');
+        formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    const finalDateLine = prefix + formattedDate;
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -318,19 +437,16 @@ function generateNameDatePhoto() {
 
             const w = 400;
             const h = 500;
-            const stripHeight = 85;
+            const stripHeight = nameText ? 85 : 55;
 
             canvas.width = w;
             canvas.height = h;
 
-            // फोटो ड्रॉ करें
             ctx.drawImage(img, 0, 0, w, h - stripHeight);
 
-            // नीचे सफेद पट्टी
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, h - stripHeight, w, stripHeight);
 
-            // ऊपर काली बॉर्डर लाइन
             ctx.strokeStyle = "#000000";
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -338,17 +454,21 @@ function generateNameDatePhoto() {
             ctx.lineTo(w, h - stripHeight);
             ctx.stroke();
 
-            // नाम और तारीख लिखें
             ctx.fillStyle = "#000000";
             ctx.textAlign = "center";
-            ctx.font = "bold 22px Arial";
-            ctx.fillText(nameText || "YOUR NAME", w / 2, h - 50);
 
-            ctx.font = "bold 19px Arial";
-            ctx.fillText(dateText || "DOP: DD-MM-YYYY", w / 2, h - 18);
+            if (nameText) {
+                ctx.font = "bold 21px Arial";
+                ctx.fillText(nameText, w / 2, h - 50);
+                ctx.font = "bold 19px Arial";
+                ctx.fillText(finalDateLine, w / 2, h - 18);
+            } else {
+                ctx.font = "bold 22px Arial";
+                ctx.fillText(finalDateLine, w / 2, h - 20);
+            }
 
             const dl = document.getElementById('nd-download');
-            dl.href = canvas.toDataURL('image/jpeg', 0.92);
+            dl.href = canvas.toDataURL('image/jpeg', 0.94);
             document.getElementById('nd-result').classList.remove('hidden');
         };
     };
