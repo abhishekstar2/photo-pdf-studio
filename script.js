@@ -1,14 +1,41 @@
-// टैब बदलने का फंक्शन
-function switchTool(tabId) {
+// टैब बदलने और ब्राउज़र History (Back बटन) में जोड़ने का फंक्शन
+function switchTool(tabId, pushHistory = true) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     
-    document.getElementById(tabId).classList.add('active');
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+    
     const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
+    // URL में #tabId जोड़ें ताकि मोबाइल का Back बटन काम करे
+    if (pushHistory && window.location.hash !== '#' + tabId) {
+        history.pushState({ tab: tabId }, "", "#" + tabId);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// जब यूजर मोबाइल या ब्राउज़र का Back बटन दबाए
+window.addEventListener('popstate', function(event) {
+    const hashTab = window.location.hash.replace('#', '');
+    if (hashTab && document.getElementById(hashTab)) {
+        switchTool(hashTab, false);
+    } else {
+        switchTool('compress-tab', false);
+    }
+});
+
+// अगर कोई सीधे किसी टूल के लिंक (#bg-tab आदि) से वेबसाइट खोले
+window.addEventListener('DOMContentLoaded', function() {
+    const hashTab = window.location.hash.replace('#', '');
+    if (hashTab && document.getElementById(hashTab)) {
+        switchTool(hashTab, false);
+    }
+});
 
 // नीचे के क्विक कार्ड्स से सीधे साइज और टूल सेट करने के लिए
 function quickAction(tabId, kbValue) {
